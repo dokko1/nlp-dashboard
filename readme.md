@@ -10,7 +10,12 @@ git clone https://github.com/itsnowkim/nlp-dashboard.git
 ```
 
 ## Run
+`streamlit-pill` 패키지의 경우, .venv 를 deactivate 이후 다시 activate 해야 인식하는 이슈 존재.
+
 ```bash
+# create new venv
+python -m venv .venv
+
 # activate venv
 source .venv/bin/activate
 
