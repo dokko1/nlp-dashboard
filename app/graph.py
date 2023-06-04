@@ -4,38 +4,59 @@ import plotly.graph_objects as go
 import numpy as np
 import datetime
 
-def apple():
-    # Load data
-    df_aapl = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv")
-    df_aapl.columns = [col.replace("AAPL.", "") for col in df_aapl.columns]
+PATH = 'https://raw.githubusercontent.com/underthelights/WebsiteFE/master/tangtang-revised.csv'
+df = pd.read_csv(PATH)
+def tangtang(df):
+    df.columns = [col.replace("AAPL.", "") for col in df.columns]
 
     # Get the date range from the loaded data
-    min_date = pd.to_datetime(df_aapl["Date"]).min().to_pydatetime().date()
-    max_date = pd.to_datetime(df_aapl["Date"]).max().to_pydatetime().date()
+    min_date = pd.to_datetime(df["Date"]).min().to_pydatetime().date()
+    max_date = pd.to_datetime(df["Date"]).max().to_pydatetime().date()
 
-    st.sidebar.title("2. Date")
     with st.sidebar.expander("Date Select"):
-        input_date = st.date_input("Input date", min_value=min_date, max_value=max_date, value=min_date)
-        output_date = st.date_input("Output date", min_value=min_date, max_value=max_date, value=max_date)
+        start_d = st.date_input("Input date", min_value=min_date, max_value=max_date, value=min_date, key="start_date_unique")
+        end_d = st.date_input("Output date", min_value=min_date, max_value=max_date, value=max_date, key="end_date_unique")
 
-        if input_date and output_date:
-            filtered_df = df_aapl[
-                (df_aapl["Date"] >= str(input_date)) &
-                (df_aapl["Date"] <= str(output_date))
+        if start_d and end_d:
+            filtered_df = df[
+                (df["Date"] >= str(start_d)) &
+                (df["Date"] <= str(end_d))
             ]
-            # Update sidebar date based on the selected range
+             # Update sidebar date based on the selected range
             if not filtered_df.empty:
-                min_filtered_date = pd.to_datetime(filtered_df["Date"]).min().to_pydatetime().date()
-                max_filtered_date = pd.to_datetime(filtered_df["Date"]).max().to_pydatetime().date()
-                st.sidebar.subheader("Selected Range")
-                st.sidebar.write("Start Date:", min_filtered_date)
-                st.sidebar.write("End Date:", max_filtered_date)
+                 min_filtered_date = pd.to_datetime(filtered_df["Date"]).min().to_pydatetime().date()
+                 max_filtered_date = pd.to_datetime(filtered_df["Date"]).max().to_pydatetime().date()
+    # Get the date range from the loaded data
+    min_date = pd.to_datetime(df["Date"]).min().to_pydatetime().date()
+    max_date = pd.to_datetime(df["Date"]).max().to_pydatetime().date()
 
-    # Create figure
+    return filtered_df
+
+def generate_bar_chart(filtered_df):
+    # # Create figure
     fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(x=list(filtered_df.Date), y=list(filtered_df.High)) if filtered_df is not None else go.Scatter()
-    )
+
+    
+    # Add Bar trace
+    if filtered_df is not None:
+        # Create a mask for negative values
+        mask = filtered_df['percent'] < 0
+        
+        # Set color for negative bars
+        color_positive = 'red'  # Positive bars color
+        color_negative = 'blue'   # Negative bars color
+        
+        # Set marker color based on mask
+        marker_color = [color_positive if val else color_negative for val in mask]
+        
+        # Add Bar trace with marker color
+        fig.add_trace(go.Bar(x=filtered_df['Date'], y=filtered_df['percent'],
+                            marker={'color': marker_color}))
+    else:
+        fig.add_trace(go.Bar())
+    # fig.add_trace(
+    #     go.Bar(x=list(filtered_df.Date), y=list(filtered_df.percent)) if filtered_df is not None else go.Bar()
+    # )
 
     # Set title
     fig.update_layout(
