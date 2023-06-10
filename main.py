@@ -1,7 +1,7 @@
 import streamlit as st
 from app.sidebar import *
 from app.graph import *
-from app.model import *
+# from app.model import *
 
 if __name__ == "__main__":
     st.title("게임 리뷰 분석기")
