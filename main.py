@@ -1,10 +1,13 @@
 import streamlit as st
 from app.sidebar import *
 from app.graph import *
+from app.model import *
 
 if __name__ == "__main__":
-    st.title("Test")
-    st.header("Landing Page")
+    st.title("게임 리뷰 분석기")
+    st.header("긍정/부정 시계열 그래프")
+    # sentiment_analysis()
+
     gg = 0
     tag, graph_num = sidebar(gg)
     # # import sidebar
