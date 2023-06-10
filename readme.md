@@ -28,3 +28,6 @@ streamlit run main.py
 # deactivate venv
 deactivate
 ```
+
+## Deploy
+https://itsnowkim-nlp-dashboard-main-fpsbhh.streamlit.app/
