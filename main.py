@@ -9,7 +9,7 @@ show_pages(
         Page("pages/Analytics.py", "Analytics", ":mag:"),
         Page("pages/Test.py", "Test", ":crystal_ball:"),
         
-        Section(name="Data"),
+        Section(name="Check Our Data"),
         Page("pages/Data.py", "Data", ":books:"),
         Page("pages/Upload.py", "Upload", ":open_file_folder:"),
     ]
