@@ -31,3 +31,7 @@ deactivate
 
 ## Deploy
 https://itsnowkim-nlp-dashboard-main-fpsbhh.streamlit.app/
+
+## Ref
+이모지 링크
+https://gist.github.com/rxaviers/7360908
