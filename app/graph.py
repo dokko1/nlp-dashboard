@@ -2,6 +2,7 @@ import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
+import plotly.offline as pyo
 import datetime
 
 PATH = 'https://raw.githubusercontent.com/underthelights/WebsiteFE/master/tangtang-revised.csv'
@@ -13,7 +14,7 @@ def tangtang(df):
     min_date = pd.to_datetime(df["Date"]).min().to_pydatetime().date()
     max_date = pd.to_datetime(df["Date"]).max().to_pydatetime().date()
 
-    with st.sidebar.expander("Date Select"):
+    with st.expander("Date Select"):
         start_d = st.date_input("Input date", min_value=min_date, max_value=max_date, value=min_date, key="start_date_unique")
         end_d = st.date_input("Output date", min_value=min_date, max_value=max_date, value=max_date, key="end_date_unique")
 
@@ -93,6 +94,54 @@ def generate_bar_chart(filtered_df):
             type="date"
         )
     )
+    plot_html = pyo.plot(fig, include_plotlyjs=False, output_type='div')
+
+    # Create the HTML page with the embedded plot
+    html_content = f"""
+    <html>
+    <head>
+        <title>Embedded Plotly Graph</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    </head>
+    <body>
+        {plot_html}
+    </body>
+    </html>
+    """
+    return html_content
 
     # Show the figure
-    st.plotly_chart(fig)
+    # st.plotly_chart(fig)
+
+def metric_analysis(df):
+    # [TODO] Last Date of that data
+    # current_date = pd.Timestamp.now().normalize().date()
+
+    # Filter the dataframe for the last 1 month
+    # last_1_month_df = df[
+    #     pd.to_datetime(df["Date"]).datetime.date() >= current_date - pd.DateOffset(months=1)
+    # ]
+
+    # # Filter the dataframe for the last 1 week
+    # last_1_week_df = df[
+    #     pd.to_datetime(df["Date"]).datetime.date() >= current_date - pd.DateOffset(weeks=1)
+    # ]
+
+    # Create three columns
+    c1, c2, c3 = st.columns(3)
+
+    # Display the total number of reviews
+    c1.metric(label="전체 리뷰 개수", value=len(df.index))
+
+    # Display the number of reviews for the last 1 month
+    # c2.metric(label="1달 리뷰 개수", value=len(last_1_month_df.index))
+    c2.metric(label="1달 리뷰 개수", value=len(df.index))
+
+    # Display the number of reviews for the last 1 week
+    # c3.metric(label="1주일 리뷰 개수", value=len(last_1_week_df.index))
+    c3.metric(label="1달 리뷰 개수", value=len(df.index))
+
+
+# filtered_df = tangtang(df)
+# generate_bar_chart(filtered_df)
+# metric_analysis(df)
