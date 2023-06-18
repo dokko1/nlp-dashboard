@@ -94,54 +94,140 @@ def generate_bar_chart(filtered_df):
             type="date"
         )
     )
-    plot_html = pyo.plot(fig, include_plotlyjs=False, output_type='div')
 
-    # Create the HTML page with the embedded plot
-    html_content = f"""
-    <html>
-    <head>
-        <title>Embedded Plotly Graph</title>
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    </head>
-    <body>
-        {plot_html}
-    </body>
-    </html>
-    """
-    return html_content
+    # Show the figure
+    st.plotly_chart(fig)
 
     # Show the figure
     # st.plotly_chart(fig)
 
 def metric_analysis(df):
-    # [TODO] Last Date of that data
-    # current_date = pd.Timestamp.now().normalize().date()
+    # Filter the data based on the selected date range
+    df['Date'] = pd.to_datetime(df['Date'])
+    last_date = pd.to_datetime(df['Date']).max().strftime('%Y-%m-%d')
 
-    # Filter the dataframe for the last 1 month
-    # last_1_month_df = df[
-    #     pd.to_datetime(df["Date"]).datetime.date() >= current_date - pd.DateOffset(months=1)
-    # ]
+    # Filter the data for the last 1 month
+    last_1_month_df = df[pd.to_datetime(df['Date']) >= pd.to_datetime(last_date) - pd.DateOffset(months=1)]
 
-    # # Filter the dataframe for the last 1 week
-    # last_1_week_df = df[
-    #     pd.to_datetime(df["Date"]).datetime.date() >= current_date - pd.DateOffset(weeks=1)
-    # ]
+    # Filter the data for the last 1 week
+    last_1_week_df = df[pd.to_datetime(df['Date']) >= pd.to_datetime(last_date) - pd.DateOffset(weeks=1)]
+
+    # Get the counts for the last 1 month
+    count_last_1_month = len(last_1_month_df)
+
+    # Get the counts for the last 1 week
+    count_last_1_week = len(last_1_week_df)
+
+    # Calculate the deltas
+    delta_1_month = count_last_1_month - len(df[df['Date'] < (pd.to_datetime(last_date) - pd.DateOffset(months=1))])
+
+    delta_1_week = count_last_1_week - len(df[df['Date'] < pd.to_datetime(last_date) - pd.DateOffset(weeks=1)])
+
+    # # Determine the sentiment based on delta
+    # sentiment_1_month = '긍정' if delta_1_month >= 0 else '부정'
+    # sentiment_1_week = '긍정' if delta_1_week >= 0 else '부정'
 
     # Create three columns
     c1, c2, c3 = st.columns(3)
 
     # Display the total number of reviews
-    c1.metric(label="전체 리뷰 개수", value=len(df.index))
+    c1.metric(label="전체 리뷰 개수", value=len(df))
 
-    # Display the number of reviews for the last 1 month
-    # c2.metric(label="1달 리뷰 개수", value=len(last_1_month_df.index))
-    c2.metric(label="1달 리뷰 개수", value=len(df.index))
+    # Display the number of reviews for the last 1 month with delta and sentiment
+    c2.metric(label="1달 리뷰 개수", value=count_last_1_month, delta=delta_1_month)#, delta_color=sentiment_1_month)
 
-    # Display the number of reviews for the last 1 week
-    # c3.metric(label="1주일 리뷰 개수", value=len(last_1_week_df.index))
-    c3.metric(label="1달 리뷰 개수", value=len(df.index))
+    # Display the number of reviews for the last 1 week with delta and sentiment
+    c3.metric(label="1주일 리뷰 개수", value=count_last_1_week, delta=delta_1_week)#, delta_color=sentiment_1_week)
+    
+    # Calculate the counts of positive and negative reviews for the entire dataset
+    positive_count_all = len(df[df['sentiment'] == '긍정'])
+    negative_count_all = len(df[df['sentiment'] == '부정'])
+
+    # Calculate the counts of positive and negative reviews for the last 1 month
+    positive_count_1_month = len(last_1_month_df[last_1_month_df['sentiment'] == '긍정'])
+    negative_count_1_month = len(last_1_month_df[last_1_month_df['sentiment'] == '부정'])
+
+    # Calculate the counts of positive and negative reviews for the last 1 month
+    positive_count_1_week = len(last_1_week_df[last_1_week_df['sentiment'] == '긍정'])
+    negative_count_1_week = len(last_1_week_df[last_1_week_df['sentiment'] == '부정'])
+
+    # Calculate the delta for positive and negative reviews for the entire dataset
+    delta_positive_all = positive_count_all - len(df[df['sentiment'] == '긍정'])
+    delta_negative_all = negative_count_all - len(df[df['sentiment'] == '부정'])
+
+    # Create three more columns
+    c41, c42, c51, c52, c61, c62 = st.columns(6)
+
+    # Display the sentiment analysis for the entire dataset with delta
+    c41.metric(label="전체 긍정 개수", value=positive_count_all, delta=delta_positive_all)
+    c42.metric(label="전체 부정 개수", value=negative_count_all, delta=delta_negative_all)
+
+    # Calculate the delta for positive and negative reviews for the last 1 month
+    delta_positive_1_month = - positive_count_all + len(last_1_month_df[last_1_month_df['sentiment'] == '긍정'])
+    delta_negative_1_month = - negative_count_all + len(last_1_month_df[last_1_month_df['sentiment'] == '부정'])
+
+    # Display the sentiment analysis for the last 1 month with delta
+    c51.metric(label="1달 긍정 개수", value=positive_count_1_month, delta=delta_positive_1_month)
+    c52.metric(label="1달 부정 개수", value=negative_count_1_month, delta=delta_negative_1_month)
+
+    # Calculate the delta for positive and negative reviews for the last 1 week
+    delta_positive_1_week = -positive_count_1_month + len(last_1_week_df[last_1_week_df['sentiment'] == '긍정'])
+    delta_negative_1_week = -negative_count_1_month + len(last_1_week_df[last_1_week_df['sentiment'] == '부정'])
+
+    # Display the sentiment analysis for the last 1 week with delta
+    c61.metric(label="1주 긍정 개수", value=positive_count_1_week, delta=delta_positive_1_week)
+    c62.metric(label="1주 부정 개수", value=negative_count_1_week, delta=delta_negative_1_week)
+
+    # Create pie chart figures
+    fig_all = go.Figure(data=[go.Pie(labels=['Positive', 'Negative'], values=[positive_count_all, negative_count_all])])
+    fig_1_month = go.Figure(data=[go.Pie(labels=['Positive', 'Negative'], values=[positive_count_1_month, negative_count_1_month])])
+    fig_1_week = go.Figure(data=[go.Pie(labels=['Positive', 'Negative'], values=[positive_count_1_week, negative_count_1_week])])
+
+    # Adjust the size of pie charts
+    fig_all.update_traces(hole=0.7)
+    fig_1_month.update_traces(hole=0.7)
+    fig_1_week.update_traces(hole=0.7)
+
+    # Set titles for pie charts
+    fig_all.update_layout(title_text="전체 Sentiment Analysis",width=250, height=250, showlegend=False, margin_l=10)
+    fig_1_month.update_layout(title_text="1달 Sentiment Analysis",width=250, height=250, showlegend=False, margin_l=10)
+    fig_1_week.update_layout(title_text="1주 Sentiment Analysis",width=250, height=250, showlegend=False, margin_l=10)
+    c7, c8, c9 = st.columns(3)
+    # Show the pie charts
+    c7.plotly_chart(fig_all)
+    c8.plotly_chart(fig_1_month)
+    c9.plotly_chart(fig_1_week)
+
+def treemap(df):
+    from collections import Counter
+    from konlpy.tag import Okt
+    from wordcloud import WordCloud
+    import matplotlib.pyplot as plt
+
+    # Load tokenizer (e.g., Okt)
+    tokenizer = Okt()
+
+    # Define function to preprocess text
+    def preprocess_text(text):
+        tokens = tokenizer.pos(text, stem=True, norm=True)
+        filtered_tokens = [word for word, pos in tokens if pos in ['Noun', 'Adjective', 'Verb']]
+        return filtered_tokens
 
 
-# filtered_df = tangtang(df)
-# generate_bar_chart(filtered_df)
-# metric_analysis(df)
+    # Concatenate all reviews
+    all_reviews = ' '.join(df['reviews'])
+
+    # Preprocess the text and count the keywords
+    keywords = preprocess_text(all_reviews)
+    keyword_counts = Counter(keywords)
+
+    # Create treemap
+    fig, ax = plt.subplots(figsize=(8, 8))
+    wordcloud = WordCloud(width=800, height=800,
+                        background_color='white',
+                        max_words=50).generate_from_frequencies(keyword_counts)
+    ax.imshow(wordcloud, interpolation='bilinear')
+    ax.axis('off')
+
+    # Display the treemap using Streamlit
+    st.pyplot(fig)
