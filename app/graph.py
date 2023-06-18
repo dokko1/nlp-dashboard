@@ -61,7 +61,7 @@ def generate_bar_chart(filtered_df):
 
     # Set title
     fig.update_layout(
-        title_text="Time series with range slider and selectors"
+        title_text="탕탕특공대 게임 리뷰 긍/부정 감성 분석"
     )
 
     # Add range slider
@@ -197,37 +197,114 @@ def metric_analysis(df):
     c7.plotly_chart(fig_all)
     c8.plotly_chart(fig_1_month)
     c9.plotly_chart(fig_1_week)
+from collections import Counter
+from konlpy.tag import Okt
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.io as pio
 
-def treemap(df):
-    from collections import Counter
-    from konlpy.tag import Okt
-    from wordcloud import WordCloud
-    import matplotlib.pyplot as plt
+def preprocess_text(text, tokenizer):
+    tokens = tokenizer.pos(text, stem=True, norm=True)
+    filtered_tokens = [word for word, pos in tokens if pos in ['Noun']]
+    return filtered_tokens
 
+def get_keyword_counts(df, stopwords_path):
     # Load tokenizer (e.g., Okt)
     tokenizer = Okt()
-
-    # Define function to preprocess text
-    def preprocess_text(text):
-        tokens = tokenizer.pos(text, stem=True, norm=True)
-        filtered_tokens = [word for word, pos in tokens if pos in ['Noun', 'Adjective', 'Verb']]
-        return filtered_tokens
-
 
     # Concatenate all reviews
     all_reviews = ' '.join(df['reviews'])
 
-    # Preprocess the text and count the keywords
-    keywords = preprocess_text(all_reviews)
-    keyword_counts = Counter(keywords)
+    # Preprocess the text
+    keywords = preprocess_text(all_reviews, tokenizer)
+
+    stop = []
+
+    with open(stopwords_path, 'r') as file:
+        for line in file:
+            word = line.strip()
+            stop.append(word)
+
+    result = [x for x in keywords if x not in stop and len(x) > 1]
+
+    keyword_counts = Counter(result)
+
+    return keyword_counts
+
+
+import plotly.graph_objects as go
+import plotly.subplots as sp
+import pandas as pd
+
+def generate_treemap_from_file(keyword_counts_file, df):
+    # Read keyword counts from file
+    keyword_counts = {}
+    with open(keyword_counts_file, 'r') as file:
+        for line in file:
+            keyword, count = line.strip().split(': ')
+            keyword_counts[keyword] = int(count)
+
+    # Get top 15 keywords
+    top_keywords = dict(list(keyword_counts.items())[:15])
+
+    # Create treemap labels and values
+    labels = list(top_keywords.keys())
+    values = list(top_keywords.values())
 
     # Create treemap
-    fig, ax = plt.subplots(figsize=(8, 8))
-    wordcloud = WordCloud(width=800, height=800,
-                        background_color='white',
-                        max_words=50).generate_from_frequencies(keyword_counts)
-    ax.imshow(wordcloud, interpolation='bilinear')
-    ax.axis('off')
+    treemap_fig = go.Figure(go.Treemap(
+        labels=labels,
+        parents=[''] * len(labels),
+        values=values,
+        textinfo='label+value+percent parent',
+        hovertemplate='Keyword: %{label}<br>Count: %{value}<br>Sentiment: %{percentParent:.2%}',
+        textfont=dict(size=14),
+        marker=dict(
+            colorscale='RdYlGn',
+            reversescale=True,
+            cmid=0.0
+        )
+    ))
 
-    # Display the treemap using Streamlit
-    st.pyplot(fig)
+    treemap_fig.update_layout(
+        title='Top 15 Keywords',
+        template='plotly_white',
+        width=800,
+        height=600,
+        margin=dict(t=50, b=50, r=50, l=50),
+    )
+
+    # Display treemap
+    treemap_fig.show()
+
+    # Generate pie chart for each keyword
+    pie_fig = sp.make_subplots(rows=5, cols=3, subplot_titles=list(top_keywords.keys()))
+
+    row, col = 1, 1
+    for keyword, count in top_keywords.items():
+        keyword_df = df[df['reviews'].str.contains(keyword)]
+        keyword_sentiment_counts = keyword_df['sentiment'].value_counts()
+
+        # Create pie chart
+        pie_chart = go.Pie(
+            labels=keyword_sentiment_counts.index,
+            values=keyword_sentiment_counts.values,
+            hoverinfo='label+value+percent',
+            textinfo='value+percent',
+            textposition='inside',
+            hole=0.5,
+            marker=dict(colors=['rgb(239, 85, 59)', 'rgb(64, 196, 99)']),
+        )
+
+        pie_fig.add_trace(pie_chart, row=row, col=col)
+        pie_fig.update_layout(showlegend=False)
+
+        # Increment row and column
+        if col < 3:
+            col += 1
+        else:
+            col = 1
+            row += 1
+
+    # Display pie chart
+    pie_fig.show()

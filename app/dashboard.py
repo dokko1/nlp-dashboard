@@ -19,41 +19,14 @@ def dash():
     metric_analysis(filtered_df)
 
 
+    # stopwords_path = './content/stopwords.txt'  # stopwords 파일 경로
 
+    # keyword_counts = get_keyword_counts(df, stopwords_path)
 
+    # # 1. keyword_counts를 text 파일로 저장
+    # with open('keyword_counts.txt', 'r') as file:
+    #     for keyword, count in keyword_counts.items():
+    #         file.read(f"{keyword}: {count}\n")
 
+    generate_treemap_from_file('keyword_counts.txt', filtered_df)
 
-    # # dashboard 다시 찾기
-    # with elements("dashboard"):
-    #     layout = [
-    #         # Parameters: element_identifier, x_pos, y_pos, width, height, [item properties...]
-    #         dashboard.Item("first_item", 0, 0, 4, 3, isDraggable=False),
-    #         dashboard.Item("second_item", 2, 3, 2, 2), #, isDraggable=False, moved=False),
-    #         dashboard.Item("third_item", 0, 3, 1, 1), #, isResizable=False),
-    #         dashboard.Item("fourth_item", 3, 3, 2, 2),
-    #     ]
-
-    #     def handle_layout_change(updated_layout):
-    #         print(updated_layout)
-
-    #     with dashboard.Grid(layout, onLayoutChange=handle_layout_change):
-            
-    #         mui.Paper(
-    #                 html.Div(
-    #                 [
-    #                     html.Iframe(
-    #                         srcDoc=open('./embedded_plot.html', 'r').read(),
-    #                         style={
-    #                             "border": "none",
-    #                             "scrolling": "no",
-    #                             "seamless": "seamless",
-    #                             "height": "525px",
-    #                             "width": "100%"
-    #                         }
-    #                     )
-    #                 ]
-    #             ),key="first_item"
-    #         )
-    #         mui.Paper(metric_analysis(df), key="second_item")
-    #         mui.Paper("Third", key="third_item")
-    #         # mui.Paper(treemap(df), key="third_item")
