@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 import numpy as np
 import plotly.offline as pyo
 import datetime
+import requests
+
 
 PATH = 'https://raw.githubusercontent.com/underthelights/WebsiteFE/master/tangtang-revised.csv'
 df = pd.read_csv(PATH)
@@ -236,11 +238,18 @@ import plotly.graph_objects as go
 import plotly.subplots as sp
 import pandas as pd
 
-def generate_treemap_from_file(keyword_counts_file, df):
+def generate_treemap_from_file(keyword_counts_url, df):
     # Read keyword counts from file
+
+    def read_file_from_url(url):
+        response = requests.get(url)
+        response.raise_for_status()
+        content = response.text
+        return content
+    keyword_counts_text = read_file_from_url(keyword_counts_url)
     keyword_counts = {}
-    with open(keyword_counts_file, 'r') as file:
-        for line in file:
+    for line in keyword_counts_text.split('\n'):
+        if ':' in line:
             keyword, count = line.strip().split(': ')
             keyword_counts[keyword] = int(count)
 
@@ -275,18 +284,15 @@ def generate_treemap_from_file(keyword_counts_file, df):
     )
 
     # Display treemap
-    treemap_fig.show()
+    st.plotly_chart(treemap_fig)
 
-    # Generate pie chart for each keyword
-    pie_fig = sp.make_subplots(rows=5, cols=3, subplot_titles=list(top_keywords.keys()))
-
-    row, col = 1, 1
+    # Generate pie chart and example sentences for each keyword
     for keyword, count in top_keywords.items():
         keyword_df = df[df['reviews'].str.contains(keyword)]
-        keyword_sentiment_counts = keyword_df['sentiment'].value_counts()
 
-        # Create pie chart
-        pie_chart = go.Pie(
+        # Generate pie chart for keyword
+        keyword_sentiment_counts = keyword_df['sentiment'].value_counts()
+        pie_chart = go.Figure(go.Pie(
             labels=keyword_sentiment_counts.index,
             values=keyword_sentiment_counts.values,
             hoverinfo='label+value+percent',
@@ -294,17 +300,31 @@ def generate_treemap_from_file(keyword_counts_file, df):
             textposition='inside',
             hole=0.5,
             marker=dict(colors=['rgb(239, 85, 59)', 'rgb(64, 196, 99)']),
+        ))
+
+        pie_chart.update_layout(
+            title=f"Sentiment Distribution for '{keyword}'",
+            template='plotly_white',
+            width=500,
+            height=400,
         )
 
-        pie_fig.add_trace(pie_chart, row=row, col=col)
-        pie_fig.update_layout(showlegend=False)
+        # Display pie chart
+        st.plotly_chart(pie_chart)
 
-        # Increment row and column
-        if col < 3:
-            col += 1
-        else:
-            col = 1
-            row += 1
+        # Display example sentences for keyword
+        st.write(f"Examples for '{keyword}':")
+        if len(keyword_df) > 3:
+            positive_examples = keyword_df[keyword_df['sentiment'] == '긍정']['reviews'].sample(n=min(3, len(keyword_df[keyword_df['sentiment'] == '긍정'])), replace=False).tolist()
+            negative_examples = keyword_df[keyword_df['sentiment'] == '부정']['reviews'].sample(n=min(3, len(keyword_df[keyword_df['sentiment'] == '부정'])), replace=False).tolist()
 
-    # Display pie chart
-    pie_fig.show()
+            tab_labels = ["Positive", "Negative"]
+            tab_content = [positive_examples, negative_examples]
+
+            tabs = st.tabs(tab_labels)
+            for i, content in enumerate(tab_content):
+                with tabs[i]:
+                    for example in content:
+                        example = example.replace(keyword, f"<mark>{keyword}</mark>")  # 키워드 강조
+                        example = f"[#{tab_labels[i]}] {example}"
+                        st.markdown(example, unsafe_allow_html=True)
