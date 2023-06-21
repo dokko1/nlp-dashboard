@@ -1,16 +1,19 @@
 import pandas as pd 
-import streamlit as st
-import plotly.graph_objects as go
 import numpy as np
-import plotly.offline as pyo
-import datetime
 import requests
-
+import pandas as pd
+import streamlit as st
+from konlpy.tag import Okt
+import plotly.graph_objects as go
+import plotly.graph_objects as go
+# from streamlit_pills import pills
+# from sklearn.metrics.pairwise import cosine_similarity
+# import nltk
 
 PATH = 'https://raw.githubusercontent.com/underthelights/WebsiteFE/master/tangtang-revised.csv'
 df = pd.read_csv(PATH)
+
 def tangtang(df):
-    df.columns = [col.replace("AAPL.", "") for col in df.columns]
 
     # Get the date range from the loaded data
     min_date = pd.to_datetime(df["Date"]).min().to_pydatetime().date()
@@ -185,67 +188,181 @@ def metric_analysis(df):
     fig_1_month = go.Figure(data=[go.Pie(labels=['Positive', 'Negative'], values=[positive_count_1_month, negative_count_1_month])])
     fig_1_week = go.Figure(data=[go.Pie(labels=['Positive', 'Negative'], values=[positive_count_1_week, negative_count_1_week])])
 
+    # Set color for pie chart sectors
+    colors = ['rgb(0, 0, 255)', 'rgb(255, 0, 0)']  # Blue and Red colors for Positive and Negative
+
     # Adjust the size of pie charts
-    fig_all.update_traces(hole=0.7)
-    fig_1_month.update_traces(hole=0.7)
-    fig_1_week.update_traces(hole=0.7)
+    fig_all.update_traces(hole=0.7, marker=dict(colors=colors))
+    fig_1_month.update_traces(hole=0.7, marker=dict(colors=colors))
+    fig_1_week.update_traces(hole=0.7, marker=dict(colors=colors))
 
     # Set titles for pie charts
-    fig_all.update_layout(title_text="전체 Sentiment Analysis",width=250, height=250, showlegend=False, margin_l=10)
-    fig_1_month.update_layout(title_text="1달 Sentiment Analysis",width=250, height=250, showlegend=False, margin_l=10)
-    fig_1_week.update_layout(title_text="1주 Sentiment Analysis",width=250, height=250, showlegend=False, margin_l=10)
+    fig_all.update_layout(title_text="전체 Sentiment Analysis", width=250, height=250, showlegend=False, margin_l=10)
+    fig_1_month.update_layout(title_text="1달 Sentiment Analysis", width=250, height=250, showlegend=False, margin_l=10)
+    fig_1_week.update_layout(title_text="1주 Sentiment Analysis", width=250, height=250, showlegend=False, margin_l=10)
+
     c7, c8, c9 = st.columns(3)
     # Show the pie charts
     c7.plotly_chart(fig_all)
     c8.plotly_chart(fig_1_month)
     c9.plotly_chart(fig_1_week)
-from collections import Counter
-from konlpy.tag import Okt
-import pandas as pd
-import plotly.graph_objects as go
-import plotly.io as pio
 
-def preprocess_text(text, tokenizer):
-    tokens = tokenizer.pos(text, stem=True, norm=True)
-    filtered_tokens = [word for word, pos in tokens if pos in ['Noun']]
-    return filtered_tokens
 
-def get_keyword_counts(df, stopwords_path):
-    # Load tokenizer (e.g., Okt)
+# def preprocess_text(text, tokenizer):
+#     tokens = tokenizer.pos(text, stem=True, norm=True)
+#     filtered_tokens = [word for word, pos in tokens if pos in ['Noun']]
+#     return filtered_tokens
+
+# def get_keyword_counts(df, stopwords_path):
+#     # Load tokenizer (e.g., Okt)
+#     tokenizer = Okt()
+
+#     # Concatenate all reviews
+#     all_reviews = ' '.join(df['reviews'])
+
+#     # Preprocess the text
+#     keywords = preprocess_text(all_reviews, tokenizer)
+
+#     stop = []
+
+#     with open(stopwords_path, 'r') as file:
+#         for line in file:
+#             word = line.strip()
+#             stop.append(word)
+
+#     result = [x for x in keywords if x not in stop and len(x) > 1]
+
+#     keyword_counts = Counter(result)
+
+#     return keyword_counts
+
+
+def tangtang_okt():
+    df = pd.read_csv("탕탕특공대 감성분석 결과.csv",index_col = 0)
     tokenizer = Okt()
-
-    # Concatenate all reviews
-    all_reviews = ' '.join(df['reviews'])
-
-    # Preprocess the text
-    keywords = preprocess_text(all_reviews, tokenizer)
-
-    stop = []
-
-    with open(stopwords_path, 'r') as file:
-        for line in file:
-            word = line.strip()
-            stop.append(word)
-
-    result = [x for x in keywords if x not in stop and len(x) > 1]
-
-    keyword_counts = Counter(result)
-
-    return keyword_counts
+    df['reviews']= df['reviews'].apply(tokenizer.phrases)
+    All = []
+    for i in df['reviews']:
+        tokens = tokenizer.pos(''.join(i), stem= True, norm = True)
+        filtered = [word for word,pos in tokens if pos in 'Noun']
+        All += filtered
+    words =[]
+    # words = nltk.FreqDist(All)
+    # print([(i,j) for (i,j) in words.most_common(100) if len(i) >1])
+    with open('tangtang-okt.txt', 'w', encoding='utf-8') as f:
+        for i, j in words.most_common(100):
+            if len(i) > 1:
+                f.write(f'{i}: {j}\n')
 
 
-import plotly.graph_objects as go
-import plotly.subplots as sp
-import pandas as pd
+def read_file_from_url(url):
+    response = requests.get(url)
+    response.raise_for_status()
+    content = response.text
+    return content
 
+# def generate_treemap_from_file(keyword_counts_url, df):
+#     # 파일에서 키워드 수를 읽어옵니다
+
+#     keyword_counts_text = read_file_from_url(keyword_counts_url)
+#     keyword_counts = {}
+#     for line in keyword_counts_text.split('\n'):
+#         if ':' in line:
+#             keyword, count = line.strip().split(': ')
+#             keyword_counts[keyword] = int(count)
+
+#     # 상위 30개의 키워드를 가져옵니다.
+#     top_keywords = dict(list(keyword_counts.items())[:30])
+
+#     # 트리맵의 레이블과 값들을 생성합니다.
+#     labels = list(top_keywords.keys())
+#     values = list(top_keywords.values())
+
+#     # 키워드 별 감성 분석 결과를 가져옵니다.
+#     sentiment_colors = {'부정': 'rgb(255, 0, 0)', '긍정': 'rgb(0, 0, 255)'}
+#     color_values = []
+#     custom_colors = []
+#     for keyword in labels:
+#         keyword_df = df[df['reviews'].str.contains(keyword)]
+#         positive_percentage = (keyword_df['sentiment'] == '긍정').sum() / len(keyword_df)
+#         negative_percentage = (keyword_df['sentiment'] == '부정').sum() / len(keyword_df)
+#         blended_color = np.array(sentiment_colors['부정']) * negative_percentage + np.array(sentiment_colors['긍정']) * positive_percentage
+#         blended_color = blended_color * (1 - positive_percentage) + np.array(sentiment_colors['긍정']) * positive_percentage * 0.2
+#         color_values.append(f'rgb({blended_color[0]}, {blended_color[1]}, {blended_color[2]})')
+#         custom_colors.append((positive_percentage, negative_percentage))
+
+
+
+# # Get the list of keywords
+# keywords = list(top_keywords.keys())
+
+# # Select keyword using streamlit_pills
+# selected_keyword = pills("키워드 선택", keywords)
+
+# # Retrieve the count for the selected keyword
+# count = top_keywords[selected_keyword]
+
+# # Filter the dataframe for the selected keyword
+# keyword_df = df[df['reviews'].str.contains(selected_keyword)]
+
+# # Generate pie chart for the selected keyword
+# keyword_sentiment_counts = keyword_df['sentiment'].value_counts()
+# sentiment_colors = {'긍정': 'rgb(0, 0, 255)', '부정': 'rgb(255, 0, 0)'}
+# colors = [sentiment_colors[sentiment] for sentiment in keyword_sentiment_counts.index]
+
+# pie_chart = go.Figure(go.Pie(
+#     labels=keyword_sentiment_counts.index,
+#     values=keyword_sentiment_counts.values,
+#     hoverinfo='label+value+percent',
+#     textinfo='value+percent',
+#     textposition='inside',
+#     hole=0.5,
+#     marker=dict(colors=colors),
+# ))
+
+# pie_chart.update_layout(
+#     title=f"'{selected_keyword}'에 대한 감성 분포",
+#     template='plotly_white',
+#     width=500,
+#     height=400,
+# )
+
+# # Display pie chart
+# st.plotly_chart(pie_chart)
+
+# # Display example sentences for the selected keyword
+# st.write(f"'{selected_keyword}'에 대한 예시 문장:")
+# if len(keyword_df) > 5:
+#     positive_examples = keyword_df[keyword_df['sentiment'] == '긍정']['reviews'].sample(
+#         n=min(5, len(keyword_df[keyword_df['sentiment'] == '긍정'])),
+#         replace=False
+#     ).tolist()
+#     negative_examples = keyword_df[keyword_df['sentiment'] == '부정']['reviews'].sample(
+#         n=min(5, len(keyword_df[keyword_df['sentiment'] == '부정'])),
+#         replace=False
+#     ).tolist()
+
+#     tab_labels = ["긍정", "부정"]
+#     tab_content = [positive_examples, negative_examples]
+
+#     # Create a tab for each sentiment category
+#     tabs = st.tabs(tab_labels)
+
+#     for i, content in enumerate(tab_content):
+#         with tabs[i]:
+#             for example in content:
+#                 sentiment = keyword_df.loc[keyword_df['reviews'] == example, 'sentiment'].iloc[0]
+
+#                 if sentiment == '긍정':
+#                     example = example.replace(selected_keyword, f"<mark style='background-color: blue; color: white;'>{selected_keyword}</mark>")
+#                 else:
+#                     example = example.replace(selected_keyword, f"<mark style='background-color: red; color: white;'>{selected_keyword}</mark>")
+
+#                 example = f"[#{tab_labels[i]}] {example}"
+#                 st.markdown(example, unsafe_allow_html=True)
 def generate_treemap_from_file(keyword_counts_url, df):
-    # Read keyword counts from file
+    # 파일에서 키워드 수를 읽어옵니다
 
-    def read_file_from_url(url):
-        response = requests.get(url)
-        response.raise_for_status()
-        content = response.text
-        return content
     keyword_counts_text = read_file_from_url(keyword_counts_url)
     keyword_counts = {}
     for line in keyword_counts_text.split('\n'):
@@ -253,30 +370,48 @@ def generate_treemap_from_file(keyword_counts_url, df):
             keyword, count = line.strip().split(': ')
             keyword_counts[keyword] = int(count)
 
-    # Get top 15 keywords
-    top_keywords = dict(list(keyword_counts.items())[:15])
+    # 상위 30개의 키워드를 가져옵니다.
+    top_keywords = dict(list(keyword_counts.items())[:30])
 
-    # Create treemap labels and values
+    # 트리맵의 레이블과 값들을 생성합니다.
     labels = list(top_keywords.keys())
     values = list(top_keywords.values())
 
-    # Create treemap
+    # 키워드 별 감성 분석 결과를 가져옵니다.
+    sentiment_colors = {'부정': 'rgb(255, 0, 0)', '긍정': 'rgb(0, 0, 255)'}
+    color_values = []
+    custom_colors = []
+    for keyword in labels:
+        keyword_df = df[df['reviews'].str.contains(keyword)]
+        positive_percentage = (keyword_df['sentiment'] == '긍정').sum() / len(keyword_df) * 100
+        negative_percentage = (keyword_df['sentiment'] == '부정').sum() / len(keyword_df) * 100
+        custom_colors.append((positive_percentage * 0.01, negative_percentage * 0.01))
+        if positive_percentage > negative_percentage:
+            color_values.append(sentiment_colors['긍정'])
+        else:
+            color_values.append(sentiment_colors['부정'])
+
+    # 트리맵을 생성합니다.
     treemap_fig = go.Figure(go.Treemap(
         labels=labels,
         parents=[''] * len(labels),
         values=values,
         textinfo='label+value+percent parent',
-        hovertemplate='Keyword: %{label}<br>Count: %{value}<br>Sentiment: %{percentParent:.2%}',
+        hovertemplate='키워드: %{label}<br>개수: %{value}<br>감성: %{percentParent:.2f}%<br>'
+                      '긍정: %{customdata[0]:.2f}%<br>부정: %{customdata[1]:.2f}%',
         textfont=dict(size=14),
         marker=dict(
-            colorscale='RdYlGn',
+            colorscale=[[0, 'rgb(255, 0, 0)'], [1, 'rgb(0, 0, 255)']],
             reversescale=True,
-            cmid=0.0
-        )
+            cmid=50.0,
+            colors=color_values
+        ),
+        customdata=custom_colors
     ))
 
+    # 트리맵의 레이아웃을 업데이트합니다.
     treemap_fig.update_layout(
-        title='Top 15 Keywords',
+        title='상위 30개 키워드',
         template='plotly_white',
         width=800,
         height=600,
@@ -284,14 +419,24 @@ def generate_treemap_from_file(keyword_counts_url, df):
     )
 
     # Display treemap
-    st.plotly_chart(treemap_fig)
+    st.plotly_chart(treemap_fig)# Get the list of keywords
+    keywords = list(top_keywords.keys())
 
-    # Generate pie chart and example sentences for each keyword
-    for keyword, count in top_keywords.items():
-        keyword_df = df[df['reviews'].str.contains(keyword)]
+    # Select multiple keywords using multiselect
+    selected_keywords = st.multiselect("키워드 선택", keywords)
 
-        # Generate pie chart for keyword
+    for selected_keyword in selected_keywords:
+        # Retrieve the count for the selected keyword
+        count = top_keywords[selected_keyword]
+
+        # Filter the dataframe for the selected keyword
+        keyword_df = df[df['reviews'].str.contains(selected_keyword)]
+
+        # Generate pie chart for the selected keyword
         keyword_sentiment_counts = keyword_df['sentiment'].value_counts()
+        sentiment_colors = {'긍정': 'rgb(0, 0, 255)', '부정': 'rgb(255, 0, 0)'}
+        colors = [sentiment_colors[sentiment] for sentiment in keyword_sentiment_counts.index]
+
         pie_chart = go.Figure(go.Pie(
             labels=keyword_sentiment_counts.index,
             values=keyword_sentiment_counts.values,
@@ -299,11 +444,11 @@ def generate_treemap_from_file(keyword_counts_url, df):
             textinfo='value+percent',
             textposition='inside',
             hole=0.5,
-            marker=dict(colors=['rgb(239, 85, 59)', 'rgb(64, 196, 99)']),
+            marker=dict(colors=colors),
         ))
 
         pie_chart.update_layout(
-            title=f"Sentiment Distribution for '{keyword}'",
+            title=f"'{selected_keyword}'에 대한 감성 분포",
             template='plotly_white',
             width=500,
             height=400,
@@ -312,19 +457,33 @@ def generate_treemap_from_file(keyword_counts_url, df):
         # Display pie chart
         st.plotly_chart(pie_chart)
 
-        # Display example sentences for keyword
-        st.write(f"Examples for '{keyword}':")
-        if len(keyword_df) > 3:
-            positive_examples = keyword_df[keyword_df['sentiment'] == '긍정']['reviews'].sample(n=min(3, len(keyword_df[keyword_df['sentiment'] == '긍정'])), replace=False).tolist()
-            negative_examples = keyword_df[keyword_df['sentiment'] == '부정']['reviews'].sample(n=min(3, len(keyword_df[keyword_df['sentiment'] == '부정'])), replace=False).tolist()
+        # Display example sentences for the selected keyword
+        st.write(f"'{selected_keyword}'에 대한 예시 문장:")
+        if len(keyword_df) > 5:
+            positive_examples = keyword_df[keyword_df['sentiment'] == '긍정']['reviews'].sample(
+                n=min(5, len(keyword_df[keyword_df['sentiment'] == '긍정'])),
+                replace=False
+            ).tolist()
+            negative_examples = keyword_df[keyword_df['sentiment'] == '부정']['reviews'].sample(
+                n=min(5, len(keyword_df[keyword_df['sentiment'] == '부정'])),
+                replace=False
+            ).tolist()
 
-            tab_labels = ["Positive", "Negative"]
+            tab_labels = ["긍정", "부정"]
             tab_content = [positive_examples, negative_examples]
 
+            # Create a tab for each sentiment category
             tabs = st.tabs(tab_labels)
+
             for i, content in enumerate(tab_content):
                 with tabs[i]:
                     for example in content:
-                        example = example.replace(keyword, f"<mark>{keyword}</mark>")  # 키워드 강조
+                        sentiment = keyword_df.loc[keyword_df['reviews'] == example, 'sentiment'].iloc[0]
+
+                        if sentiment == '긍정':
+                            example = example.replace(selected_keyword, f"<mark style='background-color: blue; color: white;'>{selected_keyword}</mark>")
+                        else:
+                            example = example.replace(selected_keyword, f"<mark style='background-color: red; color: white;'>{selected_keyword}</mark>")
+
                         example = f"[#{tab_labels[i]}] {example}"
                         st.markdown(example, unsafe_allow_html=True)
