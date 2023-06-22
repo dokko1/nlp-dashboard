@@ -1,5 +1,13 @@
 import streamlit as st
+
 from st_pages import add_page_title, add_indentation
+
+
+import requests
+
+def make_api_request(type,sentence):
+    response = requests.get(f"http://localhost:9999/meet/?type={type}&sentence={sentence}")
+    return response.json()
 
 add_page_title()
 add_indentation()
@@ -8,7 +16,7 @@ st.divider()
 
 option = st.selectbox(
     '테스트할 모델을 선택하세요.',
-    ('Tng3.0(Default)', 'Tng3.5', 'Tng4.0(Not stable)'))
+    ('Chanho-Park1.0', 'BeomYun-Kwon1.0'))
 
 st.write('선택된 모델 : ', option)
 
@@ -34,4 +42,12 @@ st.write('Your sentense is : ',sentence)
 
 if sentence != "":
     if st.button('Test!'):
-        st.write('Now working....')
+        #load model, set cache to prevent reloading
+        # model = load_model(option)
+        
+        # model inference, call api
+        with st.spinner("Classifying..."):
+            result = make_api_request(type=option, sentence=sentence)
+            # output = movie_evaluation_predict(model, sentence)
+            st.markdown(f" **{result['accuracy']}** 의 정확도로 해당 문장은 **{result['flag']}**입니다.")
+            
